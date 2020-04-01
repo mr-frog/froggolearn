@@ -5,18 +5,15 @@ from scipy.optimize import minimize
 
 __all__ = ['normalequation', 'gradientdescent', 'bfgs']
 
+### Function minimizers:
 
-def bfgs(func, x0, args=(), jac = ''):
+def bfgs(cost_func, x0, args=(), delta_func = ''):
     """Solves for theta using scipys implementation of BFGS"""
-    return minimize(fun = func, x0 = x0, args = args, method = 'BFGS', jac = jac).x
-
-def normalequation(X_values, y_values):
-    """Solves for theta using the normal equations approach."""
-
-    return np.linalg.pinv(X_values.T @ X_values) @ X_values.T @ y_values
+    return minimize(fun = cost_func, x0 = x0, args = args,
+                    method = 'BFGS', jac = delta_func).x
 
 def gradientdescent(X_values, y_values, cost_func, delta_func):
-    """Approximates Theta using an iterative gradient descent approach."""
+    """Minimizes a cost_function using an iterative gradient descent approach."""
     elements, features = X_values.shape
     theta = np.zeros(shape=(features))
     step = 1
@@ -32,3 +29,9 @@ def gradientdescent(X_values, y_values, cost_func, delta_func):
             break
         old_cost = cost
     return theta
+
+### Numerical solvers:
+
+def normalequation(X_values, y_values):
+    """Solves for theta using the normal equations approach."""
+    return np.linalg.pinv(X_values.T @ X_values) @ X_values.T @ y_values

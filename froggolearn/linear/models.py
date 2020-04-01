@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
-from .algorithms import gradientdescent, normalequation, bfgs
-from ..utils import standardize_data, sigmoid
+from ..utils.algorithms import gradientdescent, normalequation, bfgs
+from ..utils.utils import standardize_data, sigmoid
 
 from matplotlib import pyplot as plt
 
