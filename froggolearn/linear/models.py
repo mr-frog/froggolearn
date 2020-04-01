@@ -146,7 +146,6 @@ class LogisticRegression:
             X_values, sx, mx = standardize_data(X_values)
             self.sx, self.mx = sx, mx
             self.isscaled = True
-
         X_values = np.insert(X_values, 0, 1, axis=1)
         theta = np.zeros(shape=(X_values.shape[1]))
         if mode == 'gd':
@@ -157,7 +156,8 @@ class LogisticRegression:
         self.coef = theta
         self.isfit = True
 
-    def predict(self, X):
+    def predict(self, X_in):
+        X = X_in.copy()
         if not isinstance(X, pd.DataFrame):
             raise TypeError("Input X must be pd.DataFrame type.")
         if not self.isfit:

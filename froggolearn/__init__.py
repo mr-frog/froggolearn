@@ -1,3 +1,4 @@
 from . import linear
 from . import utils
-__all__ = ['linear', 'utils']
+from . import metrics
+__all__ = ['linear', 'utils', 'metrics']

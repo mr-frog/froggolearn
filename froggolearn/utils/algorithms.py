@@ -33,5 +33,5 @@ def gradientdescent(X_values, y_values, cost_func, delta_func):
 ### Numerical solvers:
 
 def normalequation(X_values, y_values):
-    """Solves for theta using the normal equations approach."""
+    """Solves a linear regression problem for theta using the normal equations approach."""
     return np.linalg.pinv(X_values.T @ X_values) @ X_values.T @ y_values
