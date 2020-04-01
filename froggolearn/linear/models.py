@@ -36,9 +36,7 @@ class LinearRegression:
 
         if not isinstance(X, pd.DataFrame) or not isinstance(y, pd.DataFrame):
             raise TypeeError("Input X and y must be pd.DataFrame type.")
-
         X_values = X.values
-
         if y.shape[1] == 1:
             y_values = y.values.reshape(-1)
         else:
@@ -50,20 +48,17 @@ class LinearRegression:
             self.sx, self.mx = sx, mx
             self.sy, self.my = sy, my
             self.isscaled = True
-
         if fit_intercept:
             X_values = np.insert(X_values, 0, 1, axis=1)
             self.intercept_fit = True
-        theta = np.zeros(shape=(X_values.shape[1]))
 
+        theta = np.zeros(shape=(X_values.shape[1]))
         if mode == "ne":
             type = "Normal Equation"
             theta = normalequation(X_values, y_values)
-
         elif mode == "gd":
             type = "Gradient Descent"
             theta = gradientdescent(X_values, y_values, self.cost_func, self.delta_func)
-
         elif mode == "bfgs":
             type = "BFGS"
             theta = bfgs(self.cost_func, theta, (X_values, y_values), self.delta_func)
@@ -73,7 +68,6 @@ class LinearRegression:
             self.coef = theta[1:]
         else:
             self.coef = theta
-
         self.type = type
         self.isfit = True
 
@@ -133,9 +127,14 @@ class LogisticRegression:
         return (1 / elements) * X_values.T @ (hypothesis - y_values)
 
     def fit(self, X, y, standardize=True, mode='bfgs'):
+
         if not isinstance(X, pd.DataFrame) or not isinstance(y, pd.DataFrame):
             raise TypeError("Input X and y must be pd.DataFrame type.")
-
+        try:
+            X.astype('float64')
+            y.astype('float64')
+        except:
+            raise TypeError("Input Values must be numerical.")
         X_values = X.values
         if y.shape[1] == 1:
             y_values = y.values.reshape(-1)
@@ -147,6 +146,7 @@ class LogisticRegression:
             self.sx, self.mx = sx, mx
             self.isscaled = True
         X_values = np.insert(X_values, 0, 1, axis=1)
+
         theta = np.zeros(shape=(X_values.shape[1]))
         if mode == 'gd':
             theta = gradientdescent(X_values, y_values, self.cost_func, self.delta_func)

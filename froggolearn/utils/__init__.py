@@ -1,5 +1,5 @@
-from .utils import standardize_data, sigmoid
-from .algorithms import normalequation, gradientdescent, bfgs
+from .utils import *
+from .algorithms import *
 
-__all__ = ["standardize_data", "sigmoid",
+__all__ = ["standardize_data", "sigmoid", "data_check_1d"
            "normalequation", "gradientdescent", "bfgs"]
