@@ -66,7 +66,7 @@ class LinearRegression:
 
         elif mode == "bfgs":
             type = "BFGS"
-            theta = bfgs(func = self.cost_func, x0 = theta, args=(X_values, y_values), jac = self.delta_func)
+            theta = bfgs(self.cost_func, theta, (X_values, y_values), self.delta_func)
 
         if fit_intercept:
             self.intercept = theta[0]
@@ -152,7 +152,7 @@ class LogisticRegression:
         if mode == 'gd':
             theta = gradientdescent(X_values, y_values, self.cost_func, self.delta_func)
         elif mode == 'bfgs':
-            theta = bfgs(func = self.cost_func, x0 = theta, args=(X_values, y_values), jac = self.delta_func)
+            theta = bfgs(self.cost_func, theta, (X_values, y_values), self.delta_func)
 
         self.coef = theta
         self.isfit = True
