@@ -30,7 +30,7 @@ class LinearRegression:
         elements = len(y_values)
         return 1/elements * ((predict - y_values)).T @ X_values
 
-    def fit(self, X, y, solver='ne', fit_intercept=True, standardize=True):
+    def fit(self, X, y, solver='ne', fit_intercept=True, standardize=True, lval = 0):
         """Mode can be ne for Normal Equation or gd for Gradient Descent"""
 
         if not isinstance(X, pd.DataFrame) or not isinstance(y, pd.DataFrame):
@@ -55,10 +55,10 @@ class LinearRegression:
         theta = np.zeros(shape=(X_values.shape[1]))
 
         if solver == "ne":
-            theta = normalequation(X_values, y_values)
+            theta = normalequation(X_values, y_values, lval = lval)
 
         elif solver == "gd":
-            theta = gradientdescent(X_values, y_values, self.cost_func, self.delta_func)
+            theta = gradientdescent(X_values, y_values, self.cost_func, self.delta_func, lval = lval)
 
         elif solver == "lbfgsb":
             theta = lbfgsb(self.cost_func, theta, (X_values, y_values), self.delta_func)

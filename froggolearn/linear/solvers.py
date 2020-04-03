@@ -12,7 +12,7 @@ def lbfgsb(cost_func, x0, args=(), delta_func = ''):
     return minimize(fun = cost_func, x0 = x0, args = args,
                     method = 'L-BFGS-B', jac = delta_func).x
 
-def gradientdescent(X_values, y_values, cost_func, delta_func, l_val = 10):
+def gradientdescent(X_values, y_values, cost_func, delta_func, lval = 0):
     """Minimizes a cost_function using an iterative gradient descent approach."""
     elements, features = X_values.shape
     theta = np.zeros(shape=(features))
@@ -21,8 +21,8 @@ def gradientdescent(X_values, y_values, cost_func, delta_func, l_val = 10):
     while True:
         theta_old = theta.copy()
         penal_array = np.ones_like(theta)
-        penal_array[1:] = (1 - step * l_val/len(y_values))
-        cost = cost_func(theta, X_values, y_values) + l_val * (1 + sum(np.power(theta[1:],2)))
+        penal_array[1:] = (1 - step * lval/len(y_values))
+        cost = cost_func(theta, X_values, y_values) + lval * (1 + sum(np.power(theta[1:],2)))
         delta = delta_func(theta, X_values, y_values)
         theta = theta * penal_array - step * delta
         if cost > old_cost and old_cost != 0:
@@ -34,8 +34,8 @@ def gradientdescent(X_values, y_values, cost_func, delta_func, l_val = 10):
 
 ### Numerical solvers:
 
-def normalequation(X_values, y_values, l_val = 10):
+def normalequation(X_values, y_values, lval = 0):
     """Solves a linear regression problem for theta using the normal equations approach."""
     l_matrix = np.eye(N = X_values.shape[1])
     l_matrix[0][0] = 0
-    return np.linalg.pinv(X_values.T @ X_values + l_val * l_matrix) @ X_values.T @ y_values
+    return np.linalg.pinv(X_values.T @ X_values + lval * l_matrix) @ X_values.T @ y_values
