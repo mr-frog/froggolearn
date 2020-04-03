@@ -11,12 +11,13 @@ def standardize_data(data_matrix):
 def sigmoid(x):
     return expit(x)
 
-def data_check_1d(d1, d2):
+def check_data(d1, d2, dim = 1):
     if not isinstance(d1, pd.DataFrame) or not isinstance(d2, pd.DataFrame):
         raise TypeError("Both input vectors must be of pd.DataFrame type.")
 
-    if not d1.shape[1] == 1 or not d2.shape[1] == 1:
-        raise ValueError("Input must be 1-dimensional vectors.")
+    if dim == 1:
+        if not d1.shape[1] == 1 or not d2.shape[1] == 1:
+            raise ValueError("Input must be 1-dimensional vectors.")
 
     if not d1.shape == d2.shape:
         raise ValueError("Both input vectors must have the same dimensions.")

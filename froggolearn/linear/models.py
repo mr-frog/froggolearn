@@ -1,6 +1,6 @@
 import pandas as pd
 import numpy as np
-from ..utils.algorithms import gradientdescent, normalequation, bfgs
+from .algorithms import gradientdescent, normalequation, lbfgsb
 from ..utils.utils import standardize_data, sigmoid
 
 from matplotlib import pyplot as plt
@@ -8,12 +8,11 @@ from matplotlib import pyplot as plt
 __all__ = ["LinearRegression", "LogisticRegression"]
 
 class LinearRegression:
-    """Fit Data using LinearRegression. Implements either Gradient Descent
-       or Normal Equation."""
+    """Fit Data using LinearRegression. """
 
     def __init__(self):
         self.coef = []
-        self.type = ""
+        self.algorithm = ""
         self.intercept = 0
         self.sx, self.mx = 1, 0
         self.sy, self.my = 1, 0
@@ -31,11 +30,11 @@ class LinearRegression:
         elements = len(y_values)
         return 1/elements * ((predict - y_values)).T @ X_values
 
-    def fit(self, X, y, mode='ne', fit_intercept=True, standardize=True):
+    def fit(self, X, y, alg='ne', fit_intercept=True, standardize=True):
         """Mode can be ne for Normal Equation or gd for Gradient Descent"""
 
         if not isinstance(X, pd.DataFrame) or not isinstance(y, pd.DataFrame):
-            raise TypeeError("Input X and y must be pd.DataFrame type.")
+            raise TypeError("Input X and y must be pd.DataFrame type.")
         X_values = X.values
         if y.shape[1] == 1:
             y_values = y.values.reshape(-1)
@@ -48,30 +47,36 @@ class LinearRegression:
             self.sx, self.mx = sx, mx
             self.sy, self.my = sy, my
             self.isscaled = True
+
         if fit_intercept:
             X_values = np.insert(X_values, 0, 1, axis=1)
             self.intercept_fit = True
 
         theta = np.zeros(shape=(X_values.shape[1]))
-        if mode == "ne":
-            type = "Normal Equation"
+
+        if alg == "ne":
+            algorithm = "Normal Equation"
             theta = normalequation(X_values, y_values)
-        elif mode == "gd":
-            type = "Gradient Descent"
+
+        elif alg == "gd":
+            algorithm = "Gradient Descent"
             theta = gradientdescent(X_values, y_values, self.cost_func, self.delta_func)
-        elif mode == "bfgs":
-            type = "BFGS"
-            theta = bfgs(self.cost_func, theta, (X_values, y_values), self.delta_func)
+
+        elif alg == "lbfgsb":
+            algorithm = "lbfgsb"
+            theta = lbfgsb(self.cost_func, theta, (X_values, y_values), self.delta_func)
 
         if fit_intercept:
             self.intercept = theta[0]
             self.coef = theta[1:]
         else:
             self.coef = theta
-        self.type = type
+
+        self.algorithm = algorithm
         self.isfit = True
 
-    def predict(self, X):
+    def predict(self, X_in):
+        X = X_in.copy()
         if not isinstance(X, pd.DataFrame):
             raise TypeError("Input X must be pd.DataFrame type.")
         if not self.isfit:
@@ -103,6 +108,8 @@ class LinearRegression:
             coef = coef * (sy/sx)
             self.coef = coef
         self.isscaled = False
+        self.sx, self.mx = 1, 0
+        self.sy, self.my = 1, 0
 
 
 class LogisticRegression:
@@ -135,6 +142,7 @@ class LogisticRegression:
             y.astype('float64')
         except:
             raise TypeError("Input Values must be numerical.")
+
         X_values = X.values
         if y.shape[1] == 1:
             y_values = y.values.reshape(-1)
@@ -150,8 +158,8 @@ class LogisticRegression:
         theta = np.zeros(shape=(X_values.shape[1]))
         if mode == 'gd':
             theta = gradientdescent(X_values, y_values, self.cost_func, self.delta_func)
-        elif mode == 'bfgs':
-            theta = bfgs(self.cost_func, theta, (X_values, y_values), self.delta_func)
+        elif mode == 'lbfgsb':
+            theta = lbfgsb(self.cost_func, theta, (X_values, y_values), self.delta_func)
 
         self.coef = theta
         self.isfit = True
