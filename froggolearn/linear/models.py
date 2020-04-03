@@ -1,6 +1,6 @@
 import pandas as pd
 import numpy as np
-from .algorithms import gradientdescent, normalequation, lbfgsb
+from .solvers import gradientdescent, normalequation, lbfgsb
 from ..utils.utils import standardize_data, sigmoid
 
 from matplotlib import pyplot as plt
@@ -12,7 +12,7 @@ class LinearRegression:
 
     def __init__(self):
         self.coef = []
-        self.algorithm = ""
+        self.solver = ""
         self.intercept = 0
         self.sx, self.mx = 1, 0
         self.sy, self.my = 1, 0
@@ -30,7 +30,7 @@ class LinearRegression:
         elements = len(y_values)
         return 1/elements * ((predict - y_values)).T @ X_values
 
-    def fit(self, X, y, alg='ne', fit_intercept=True, standardize=True):
+    def fit(self, X, y, solver='ne', fit_intercept=True, standardize=True):
         """Mode can be ne for Normal Equation or gd for Gradient Descent"""
 
         if not isinstance(X, pd.DataFrame) or not isinstance(y, pd.DataFrame):
@@ -54,16 +54,13 @@ class LinearRegression:
 
         theta = np.zeros(shape=(X_values.shape[1]))
 
-        if alg == "ne":
-            algorithm = "Normal Equation"
+        if solver == "ne":
             theta = normalequation(X_values, y_values)
 
-        elif alg == "gd":
-            algorithm = "Gradient Descent"
+        elif solver == "gd":
             theta = gradientdescent(X_values, y_values, self.cost_func, self.delta_func)
 
-        elif alg == "lbfgsb":
-            algorithm = "lbfgsb"
+        elif solver == "lbfgsb":
             theta = lbfgsb(self.cost_func, theta, (X_values, y_values), self.delta_func)
 
         if fit_intercept:
@@ -72,7 +69,7 @@ class LinearRegression:
         else:
             self.coef = theta
 
-        self.algorithm = algorithm
+        self.solver = solver
         self.isfit = True
 
     def predict(self, X_in):
