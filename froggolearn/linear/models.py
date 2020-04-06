@@ -1,110 +1,154 @@
 import pandas as pd
 import numpy as np
 from .solvers import gradientdescent, normalequation, lbfgsb
-from ..utils.utils import standardize_data, sigmoid
-
-from matplotlib import pyplot as plt
+from ..utils.utils import *
 
 __all__ = ["LinearRegression", "LogisticRegression"]
 
 class LinearRegression:
-    """Fit Data using LinearRegression. """
+    """Fit Regression-Problem using a Linear Regression approach."""
 
-    def __init__(self):
-        self.coef = []
-        self.solver = ""
-        self.intercept = 0
+    def __init__(self, penalty='l2', l_val=1.0, fit_intercept=True,
+                 solver='lbfgsb', standardize=True):
+        if penalty not in ['l2', None]:
+            raise ValueError("Only 'l2' or None penalty is supported as of now."
+                             " Got %s, sorry :("%penalty)
+
+        self.penalty = penalty
+        self.l_val = l_val
+        self.fit_intercept = fit_intercept
+        self.solver = solver
+        self.standardize = standardize
+
         self.sx, self.mx = 1, 0
         self.sy, self.my = 1, 0
+        self.intercept = 0
         self.isfit = False
-        self.isscaled = False
-        self.intercept_fit = False
+        self.is_standardized = False
 
-    def cost_func(self, theta, X_values, y_values):
-        elements = len(y_values)
-        predict = (theta @ X_values.T)
-        return 1/(2*elements) * np.power((predict - y_values), 2).sum()
+    def cost_func(self, t, X_v, y_v, penalty, l_val):
+        e = len(y_v)
+        h = (t @ X_v.T)
+        if penalty == 'l2':
+            return (1/(2*e) * np.power((h - y_v), 2).sum()
+                    + ((l_val / (2 * e)) * np.matmul(t[1:], t[1:])))
+        elif penalty == None:
+            return (1/(2*e) * np.power((h - y_v), 2).sum())
 
-    def delta_func(self, theta, X_values, y_values):
-        predict = (theta @ X_values.T)
-        elements = len(y_values)
-        return 1/elements * ((predict - y_values)).T @ X_values
+    def delta_func(self, t, X_v, y_v, penalty, l_val):
+        e = len(y_v)
+        h = (t @ X_v.T)
+        if penalty == 'l2':
+            t2 = t.copy()
+            t2[0] = 0
+            return ((1 / e) * X_v.T @ (h - y_v) + (l_val/e) * t2)
+        elif penalty == None:
+            return ((1 / e) * X_v.T @ (h - y_v))
 
-    def fit(self, X, y, solver='ne', fit_intercept=True, standardize=True, lval = 0):
-        """Mode can be ne for Normal Equation or gd for Gradient Descent"""
+    def fit(self, X, y):
+        """
+        Fit the model according to the given training data.
 
-        if not isinstance(X, pd.DataFrame) or not isinstance(y, pd.DataFrame):
-            raise TypeError("Input X and y must be pd.DataFrame type.")
-        X_values = X.values
-        if y.shape[1] == 1:
-            y_values = y.values.reshape(-1)
-        else:
-            raise ValueError("Only 1-dimensional targetvectors are supported.")
+        Parameters
+        ----------
+        X : matrix (m x n) of np.array type
+            Training matrix, with dimensions m = n_samples and
+            n = n_features.
 
-        if standardize:
+        y : vector (m, 1) of np.array type
+            Target vector relative to X.
+
+        Returns
+        -------
+        self
+            Fitted estimator.
+        """
+
+        X_values, y_values = check_input_type(X, y)
+
+        if self.standardize:
             X_values, sx, mx = standardize_data(X_values)
             y_values, sy, my = standardize_data(y_values)
             self.sx, self.mx = sx, mx
             self.sy, self.my = sy, my
-            self.isscaled = True
+            self.is_standardized = True
 
-        if fit_intercept:
+        if self.fit_intercept:
             X_values = np.insert(X_values, 0, 1, axis=1)
-            self.intercept_fit = True
 
         theta = np.zeros(shape=(X_values.shape[1]))
 
-        if solver == "ne":
-            theta = normalequation(X_values, y_values, lval = lval)
+        if self.solver == "ne":
+            theta = normalequation(X_values, y_values, self.l_val)
+        if self.solver == 'gd':
+            theta = gradientdescent(self.cost_func, theta, (X_values, y_values,
+                                    self.penalty, self.l_val), self.delta_func)
+        elif self.solver == 'lbfgsb':
+            theta = lbfgsb(self.cost_func, theta, (X_values, y_values,
+                           self.penalty, self.l_val), self.delta_func)
 
-        elif solver == "gd":
-            theta = gradientdescent(X_values, y_values, self.cost_func, self.delta_func, lval = lval)
-
-        elif solver == "lbfgsb":
-            theta = lbfgsb(self.cost_func, theta, (X_values, y_values), self.delta_func)
-
-        if fit_intercept:
+        if self.fit_intercept:
             self.intercept = theta[0]
             self.coef = theta[1:]
         else:
             self.coef = theta
 
-        self.solver = solver
         self.isfit = True
 
-    def predict(self, X_in):
-        X = X_in.copy()
-        if not isinstance(X, pd.DataFrame):
-            raise TypeError("Input X must be pd.DataFrame type.")
+    def predict(self, X):
+        """
+        Predicts Values based on the training fit and input Values X
+
+        Parameters
+        ----------
+        X : matrix (m x n) of np.array type
+            Training matrix, with dimensions m = n_samples and
+            n = n_features.
+
+        Returns
+        -------
+        y : Vector (m x n) of np.array type
+            Vector carrying the predicted labels based on X
+        """
+
         if not self.isfit:
             print("Model is not fitted.")
             return
-        if self.isscaled:
+
+        if not isinstance(X, np.ndarray):
+            try:
+                X_values = np.array(X)
+            except:
+                raise TypeError("X is not of type or convertible to type"
+                                "np.ndarray. Got %s, sorry :("%(type(X)))
+        else:
+            X_values = X.copy()
+
+        if self.is_standardized:
             X = np.divide(X - self.mx, self.sx)
+
         return ((self.coef @ X.T + self.intercept) * self.sy + self.my)
 
     def unscale_coef(self):
+        """Unscales the models coefficents"""
         if not self.isfit:
             print("Model is not fitted.")
             return
-        if not self.isscaled:
+        if not self.is_standardized:
             print("Data is not scaled.")
             return
 
         sx, mx = self.sx, self.mx
         sy, my = self.sy, self.my
-
-        if self.intercept_fit:
-            coef = self.coef
-            intercept = self.intercept
-            coef = coef * (sy/sx)
+        coef = self.coef
+        intercept = self.intercept
+        coef = coef * (sy/sx)
+        self.coef = coef
+        if self.fit_intercept:
             intercept = intercept * sy + my - sum(np.divide(coef * sy * mx, sy))
             self.intercept = intercept
-            self.coef = coef
-        else:
-            coef = coef * (sy/sx)
-            self.coef = coef
-        self.isscaled = False
+
+        self.is_standardized = False
         self.sx, self.mx = 1, 0
         self.sy, self.my = 1, 0
 
@@ -112,63 +156,122 @@ class LinearRegression:
 class LogisticRegression:
     """Fit Classification-Problem using a Logistic Regression approach."""
 
-    def __init__(self):
-        self.coef = []
+    def __init__(self, penalty='l2', l_val=1.0, fit_intercept=True,
+                 solver='lbfgsb', multi_class='ovr', standardize=True):
+
+        if penalty not in ['l2', None]:
+            raise ValueError("Only 'l2' or None penalty is supported as of now."
+                             " Got %s, sorry :("%penalty)
+        if multi_class != 'ovr':
+            raise ValueError("Only One-VS-Rest multi-target classification is"
+                             "supported as of now. Got %s, sorry:("%multi_class)
+
+        self.penalty = penalty
+        self.l_val = l_val
+        self.fit_intercept = fit_intercept
+        self.solver = solver
+        self.multi_class = multi_class
+        self.standardize = standardize
+
         self.type = ""
-        self.intercept = 0
         self.sx, self.mx = 1, 0
         self.isfit = False
-        self.isscaled = False
 
-    def cost_func(self, theta, X_values, y_values):
-        elements = len(y_values)
-        hypothesis = sigmoid(theta@X_values.T)
-        return 1 / (elements) * -y_values @ np.log(hypothesis) - (1 - y_values) @ np.log(1 - hypothesis)
+    def cost_func(self, t, X_v, y_v, penalty, l_val):
+        e = len(y_v)
+        h = sigmoid(t@X_v.T)
+        if penalty == 'l2':
+            return (((1 / e) * -y_v @ np.log(h) - (1 - y_v) @ np.log(1 - h))
+                    + ((l_val / (2 * e)) * np.matmul(t[1:], t[1:])))
+        elif penalty == None:
+            return (((1 / e) * -y_v @ np.log(h) - (1 - y_v) @ np.log(1 - h)))
 
-    def delta_func(self, theta, X_values, y_values):
-        hypothesis = sigmoid(theta@X_values.T)
-        elements = len(y_values)
-        return (1 / elements) * X_values.T @ (hypothesis - y_values)
+    def delta_func(self, t, X_v, y_v, penalty, l_val):
+        h = sigmoid(t@X_v.T)
+        e = len(y_v)
+        if penalty == 'l2':
+            t2 = t.copy()
+            t2[0] = 0
+            return ((1 / e) * X_v.T @ (h - y_v) + (l_val/e) * t2)
+        elif penalty == None:
+            return ((1 / e) * X_v.T @ (h - y_v))
 
-    def fit(self, X, y, standardize=True, mode='bfgs'):
+    def fit(self, X, y):
+        """
+        Fit the model according to the given training data.
 
-        if not isinstance(X, pd.DataFrame) or not isinstance(y, pd.DataFrame):
-            raise TypeError("Input X and y must be pd.DataFrame type.")
-        try:
-            X.astype('float64')
-            y.astype('float64')
-        except:
-            raise TypeError("Input Values must be numerical.")
+        Parameters
+        ----------
+        X : matrix (m x n) of np.array type
+            Training matrix, with dimensions m = n_samples and
+            n = n_features.
 
-        X_values = X.values
-        if y.shape[1] == 1:
-            y_values = y.values.reshape(-1)
-        else:
-            raise ValueError("Only 1-dimensional targetvectors are supported.")
+        y : vector (m, 1) of np.array type
+            Target vector relative to X.
 
-        if standardize:
+        Returns
+        -------
+        self
+            Fitted estimator.
+        """
+        X_values, y_values = check_input_type(X, y)
+
+
+        if self.standardize:
             X_values, sx, mx = standardize_data(X_values)
             self.sx, self.mx = sx, mx
-            self.isscaled = True
-        X_values = np.insert(X_values, 0, 1, axis=1)
+
+        if self.fit_intercept:
+            X_values = np.insert(X_values, 0, 1, axis=1)
 
         theta = np.zeros(shape=(X_values.shape[1]))
-        if mode == 'gd':
-            theta = gradientdescent(X_values, y_values, self.cost_func, self.delta_func)
-        elif mode == 'lbfgsb':
-            theta = lbfgsb(self.cost_func, theta, (X_values, y_values), self.delta_func)
+
+        if self.solver == 'gd':
+            theta = gradientdescent(self.cost_func, theta, (X_values, y_values,
+                                    self.penalty, self.l_val), self.delta_func)
+        elif self.solver == 'lbfgsb':
+            theta = lbfgsb(self.cost_func, theta, (X_values, y_values,
+                           self.penalty, self.l_val), self.delta_func)
+        else:
+            raise ValueError("Solver not supported. "
+                             "Got %s, must be 'gd' or 'lbfgsb'"%(self.solver))
 
         self.coef = theta
         self.isfit = True
 
-    def predict(self, X_in):
-        X = X_in.copy()
-        if not isinstance(X, pd.DataFrame):
-            raise TypeError("Input X must be pd.DataFrame type.")
+    def predict(self, X):
+        """
+        Predicts Values based on the training fit and input Values X
+
+        Parameters
+        ----------
+        X : matrix (m x n) of np.array type
+            Training matrix, with dimensions m = n_samples and
+            n = n_features.
+
+        Returns
+        -------
+        y : Vector (m x n) of np.array type
+            Vector carrying the predicted labels based on X
+        """
+
         if not self.isfit:
             print("Model is not fitted.")
             return
-        if self.isscaled:
-            X = np.divide(X - self.mx, self.sx)
-        X.insert(0, 'x0', 1)
-        return np.around(sigmoid(self.coef @ X.T))
+
+        if not isinstance(X, np.ndarray):
+            try:
+                X_values = np.array(X)
+            except:
+                raise TypeError("X is not of type or convertible to type"
+                                "np.ndarray. Got %s, sorry :("%(type(X)))
+        else:
+            X_values = X.copy()
+
+        if self.standardize:
+            X_values = np.divide(X_values - self.mx, self.sx)
+
+        if self.fit_intercept:
+            X_values = np.insert(X_values, 0, 1, axis=1)
+
+        return np.around(sigmoid(self.coef @ X_values.T))
