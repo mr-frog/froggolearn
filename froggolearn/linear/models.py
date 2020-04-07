@@ -173,7 +173,7 @@ class LogisticRegression:
         self.multi_class = multi_class
         self.standardize = standardize
 
-        self.type = ""
+        self.labels = []
         self.sx, self.mx = 1, 0
         self.isfit = False
 
@@ -216,7 +216,6 @@ class LogisticRegression:
         """
         X_values, y_values = check_input_type(X, y)
 
-
         if self.standardize:
             X_values, sx, mx = standardize_data(X_values)
             self.sx, self.mx = sx, mx
@@ -226,18 +225,31 @@ class LogisticRegression:
 
         theta = np.zeros(shape=(X_values.shape[1]))
 
-        if self.solver == 'gd':
-            theta = gradientdescent(self.cost_func, theta, (X_values, y_values,
-                                    self.penalty, self.l_val), self.delta_func)
-        elif self.solver == 'lbfgsb':
-            theta = lbfgsb(self.cost_func, theta, (X_values, y_values,
-                           self.penalty, self.l_val), self.delta_func)
-        else:
-            raise ValueError("Solver not supported. "
-                             "Got %s, must be 'gd' or 'lbfgsb'"%(self.solver))
+        if self.multi_class == 'ovr':
+            labels = np.unique(y_values)
+            thetas = np.zeros(shape=(len(labels), X_values.shape[1]))
 
-        self.coef = theta
-        self.isfit = True
+            for i in range(len(labels)):
+                label = labels[i]
+                mask = (y_values == label)
+                y_multi = np.ones_like(y_values)
+                y_multi[~mask] = 0
+                y_multi = y_multi.astype('float64')
+                if self.solver == 'gd':
+                    theta = gradientdescent(self.cost_func, theta, (X_values,
+                                            y_multi, self.penalty, self.l_val),
+                                            self.delta_func)
+                elif self.solver == 'lbfgsb':
+                    theta = lbfgsb(self.cost_func, theta, (X_values, y_multi,
+                                   self.penalty, self.l_val), self.delta_func)
+                else:
+                    raise ValueError("Solver not supported. "
+                                     "Got %s, must be 'gd' or 'lbfgsb'"
+                                     %self.solver)
+                thetas[i] = theta
+            self.coef = thetas
+            self.labels = labels
+            self.isfit = True
 
     def predict(self, X):
         """
@@ -254,11 +266,9 @@ class LogisticRegression:
         y : Vector (m x n) of np.array type
             Vector carrying the predicted labels based on X
         """
-
         if not self.isfit:
             print("Model is not fitted.")
             return
-
         if not isinstance(X, np.ndarray):
             try:
                 X_values = np.array(X)
@@ -267,11 +277,10 @@ class LogisticRegression:
                                 "np.ndarray. Got %s, sorry :("%(type(X)))
         else:
             X_values = X.copy()
-
         if self.standardize:
             X_values = np.divide(X_values - self.mx, self.sx)
-
         if self.fit_intercept:
             X_values = np.insert(X_values, 0, 1, axis=1)
-
-        return np.around(sigmoid(self.coef @ X_values.T))
+        y_predict = self.labels[np.argmax(sigmoid(self.coef @ X_values.T),
+                                          axis = 0)]
+        return y_predict

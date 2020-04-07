@@ -53,6 +53,6 @@ def confusion_matrix(y_true, y_predict):
     y_true_values, y_predict_values = check_input_type(y_true, y_predict)
     check_input_dims(y_true_values, y_predict_values, 1)
 
-    y_true = pd.Series(y_true.values.reshape(-1), name = 'True')
-    y_predict = pd.Series(y_predict.values.reshape(-1), name = 'Predicted')
+    y_true = pd.Series(y_true_values, name = 'True')
+    y_predict = pd.Series(y_predict_values, name = 'Predicted')
     return pd.crosstab(y_true, y_predict, margins = True)
