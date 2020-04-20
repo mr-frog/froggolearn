@@ -1,4 +1,3 @@
-import pandas as pd
 import numpy as np
 from ..utils.utils import check_input_dims, check_input_type
 

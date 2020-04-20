@@ -37,7 +37,10 @@ def score_matrix(y_true, y_predict, beta = 1):
         correct_predict = (np.count_nonzero(
                             np.logical_and(y_predict_values == label,
                                            y_predict_values == y_true_values)))
-        precision = correct_predict / total_predict
+        if total_predict != 0:
+            precision = correct_predict / total_predict
+        else:
+            precision = np.finfo(float).eps
         recall = correct_predict / actual
         f1 = (1+beta**2) * (precision * recall)/(beta**2 * precision + recall)
 

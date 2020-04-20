@@ -1,6 +1,6 @@
-import pandas as pd
 import numpy as np
 from .solvers import gradientdescent, normalequation, lbfgsb
+from scipy.special import xlogy
 from ..utils.utils import *
 
 __all__ = ["LinearRegression", "LogisticRegression"]
@@ -181,8 +181,10 @@ class LogisticRegression:
         e = len(y_v)
         h = sigmoid(t@X_v.T)
         if penalty == 'l2':
-            return (((1 / e) * -y_v @ np.log(h) - (1 - y_v) @ np.log(1 - h))
-                    + ((l_val / (2 * e)) * np.matmul(t[1:], t[1:])))
+            return -(((xlogy(y_v, h) + xlogy(1 - y_v, 1 - h)).sum() / h.shape[0])
+                          + (l_val / (2 * h.shape[0])) * np.power(t[1:], 2))
+            #return (((1 / e) * -y_v @ np.log(h) - (1 - y_v) @ np.log(1 - h))
+                    #+ ((l_val / (2 * e)) * np.power(t[1:], 2)))
         elif penalty == None:
             return (((1 / e) * -y_v @ np.log(h) - (1 - y_v) @ np.log(1 - h)))
 

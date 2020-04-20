@@ -9,7 +9,7 @@ __all__ = ['normalequation', 'gradientdescent', 'lbfgsb']
 
 def lbfgsb(cost_func, x0, args=(), delta_func = 0):
     """
-    Solves for theta using scipys implementation of BFGS
+    Solves for theta using scipys implementation of L-BFGS-B
     """
 
     return minimize(fun = cost_func, x0 = x0, args = args,
