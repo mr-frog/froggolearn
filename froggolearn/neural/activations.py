@@ -1,5 +1,5 @@
-from froggolearn.utils import sigmoid
 import numpy as np
+from froggolearn.utils import sigmoid
 from scipy.special import xlogy
 
 def check_type(type):
@@ -14,10 +14,10 @@ def activation(X, type):
     if type == "relu":
         return np.clip(X, 0, np.inf)
 
-def derivative(x, type):
+def derivative(X, type):
     check_type(type)
     if type == "log":
-        return x * (1 - x)
+        return X * (1 - X)
     if type == "relu":
         return np.greater(X, 0).astype(int)
 

@@ -1,4 +1,4 @@
 from .utils import *
 
-__all__ = ["standardize_data", "sigmoid", "check_input_dims",
-           "check_input_type", "LabelEncoder"]
+__all__ = ["standardize_data", "shuffle", "sigmoid", "check_input_dims",
+           "check_input_type", "bias", "LabelEncoder"]

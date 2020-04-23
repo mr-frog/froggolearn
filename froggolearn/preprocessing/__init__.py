@@ -1,3 +1,4 @@
-from image import make_square
+from .image import *
+from .data import *
 
-__all__ = ["make_square"]
+__all__ = ["make_square", "split_cv"]

@@ -43,8 +43,8 @@ def calc_num_gradient(X, y, weights):
     return numerical_gradients
 
 class NNClassifier():
-    def __init__(self, n_neurons, n_iter = "100", type = "log", solver = "sgd",
-                 batchsize = "200", rate = 0.5):
+    def __init__(self, n_neurons, n_iter = 100, type = "log", solver = "sgd",
+                 batchsize = 200, rate = 0.5, l2 = 0.0001, verbose = False):
         self.neurons = n_neurons
         self.layers = len(self.neurons) + 2
         self.n_iter = n_iter
@@ -52,6 +52,8 @@ class NNClassifier():
         self.solver = solver
         self.batchsize = batchsize
         self.rate = rate
+        self.l2 = l2
+        self.verbose = verbose
 
     def forward_propagate(self, X, weights):
         activations = []
@@ -108,8 +110,8 @@ class NNClassifier():
         for l in range(len(weights)):
             gradients[l] = deltas[l].copy()
             gradients[l][:1] = deltas[l][:1] / X.shape[0]
-            gradients[l][1:] = (np.divide(deltas[l][1:]
-                                + np.dot(0, weights[l][1:]), X.shape[0]))
+            gradients[l][1:] = (np.divide(deltas[l][1:], X.shape[0])
+                                + np.dot(self.l2, weights[l][1:]))
         del deltas
         del errors
         return gradients
@@ -127,12 +129,15 @@ class NNClassifier():
         X, _, _ = standardize_data(X)
         batchsize = min(self.batchsize, X.shape[0])
         for i in range(self.n_iter):
+
             X_sh, y_sh = shuffle(X, y)
             if (X.shape[0] % batchsize) != 0:
                 n_batches = range(int(np.floor(X.shape[0] / batchsize) + 1))
             else:
                 n_batches = range(int(np.floor(X.shape[0] / batchsize)))
             for n in n_batches:
+                if self.verbose:
+                    print("\r%s/%s, (%s/%s)   "%(i, self.n_iter, n, max(n_batches)), end ='')
                 batchstart = n * batchsize
                 batchend = min((n + 1) * batchsize, X.shape[0])
                 batch = slice(batchstart, batchend)
@@ -140,7 +145,8 @@ class NNClassifier():
                                                     weights)
                 for l in range(len(weights)):
                     weights[l] = weights[l] - self.rate * gradients[l]
-
+        if self.verbose:
+            print("\n\n")
         self.weights = weights
     def predict(self, X_val):
         weights = self.weights

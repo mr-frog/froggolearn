@@ -1,12 +1,9 @@
 import numpy as np
-from matplotlib import pyplot as plt
 from scipy.optimize import minimize
 
-
-__all__ = ['normalequation', 'gradientdescent', 'lbfgsb']
+__all__ = ["normalequation", "gradientdescent", "lbfgsb"]
 
 ### Function minimizers:
-
 def lbfgsb(cost_func, x0, args=(), delta_func = 0):
     """
     Solves for theta using scipys implementation of L-BFGS-B
@@ -35,7 +32,6 @@ def gradientdescent(cost_func, theta, args=(), delta_func = 0):
     return theta
 
 ### Numerical solvers:
-
 def normalequation(X_values, y_values, l_val = 0):
     """
     Solves a linear regression problem for theta using the normal equations approach.
