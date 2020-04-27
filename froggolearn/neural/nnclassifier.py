@@ -6,6 +6,24 @@ def make_topology(X, y, layers, neurons, type, random_state):
     """
     Creates a list of weight-matrices corresponding to the given NN-Topology.
     Uses the initialization method recommended by Glorot et al.
+
+    Input
+    ---
+    X :
+
+
+    y :
+
+
+    layers :
+
+
+    nerons :
+
+    type :
+
+
+    random_state
     """
     if isinstance(random_state, int):
         np.random.seed(int(random_state))
@@ -68,13 +86,32 @@ class NNClassifier():
         self.random_state = random_state
 
     def forward_propagate(self, X, weights):
+        """
+        Forward propagate over given batch of samples.
+
+        Input
+        ---
+        X : matrix (dimensions = m, n)
+            Training matrix, with dimensions m = n_samples and
+            n = n_features.
+
+        weights : list (lengths = layers - 1)
+            The i-th element of the list corresponds to the matrix representing
+            the transition from the i-th to the i + 1-th layer of the network.
+
+        Output
+        ---
+        activations : list (lengths = layers)
+            The i-th element of the list corresponds to the activation of the
+            i-th layer of the network.
+        """
         activations = []
         for layer in range(len(weights) + 1):
             if layer == 0:
                 act = X
                 activations.append(act)
             else:
-                act = activation(np.dot(bias(activations[layer - 1], self.bias),
+                act = activation((bias(activations[layer - 1], self.bias) @
                                         weights[layer - 1]), self.type)
                 activations.append(act)
         return activations
@@ -83,49 +120,51 @@ class NNClassifier():
         """
         Backward propagate over given batch of samples.
 
-        Parameters
-        ----------
-        X : matrix (m x n)
+        Input
+        ---
+        X : matrix (dimensions = m, n)
             Training matrix, with dimensions m = n_samples and
             n = n_features.
 
-        y : vector (m, 1)
-            Target vector relative to X.
+        y : vector (dimensions = m, 1)
+            Target vector relative to X, with dimensions m = n_samples and 1.
 
         weights : list (lengths = layers - 1)
             The i-th element of the list corresponds to the matrix representing the
             transition from the i-th to the i + 1-th layer of the network
 
-        Returns
-        -------
-        Gradients : list (lengths = layers - 1)
+        Output
+        ---
+        gradients : list (lengths = layers - 1)
             The i-th element of the list corresponds to the gradient with which the
             i-th element in the weights list should be updated
         """
+        # Initialize necessary arrays
         deltas = [0] * len(weights)
         gradients = [0] * len(weights)
         errors = [0] * (len(weights) + 1)
+        # Iterate over all samples
         for i in range(X.shape[0]):
+            # forward propagate to obtain the current hypothesis of the network
             activations = self.forward_propagate(X[i, :], weights)
+            # backward propagate iteratively over the layers
             for j in reversed(range(len(activations))):
                 if j == max(range(len(activations))):
                     errors[j] = activations[j] - y[i]
-                    sliced_e = errors[j].copy()[np.newaxis]
-                    sliced_a = bias(activations[j - 1], self.bias).copy()[np.newaxis]
-                    deltas[j - 1] = deltas[j - 1] + np.dot(sliced_a.T, sliced_e)
+                    sliced_e = errors[j][np.newaxis]
+                    sliced_a = bias(activations[j - 1], self.bias)[np.newaxis]
+                    deltas[j - 1] = deltas[j - 1] + sliced_a.T @ sliced_e
                 elif j != 0:
-                    errors[j] = (np.dot(errors[j + 1], weights[j].T[:, 1:])
+                    errors[j] = (errors[j + 1] @ weights[j].T[:, 1:]
                                  * derivative(activations[j], self.type))
-                    sliced_e = errors[j].copy()[np.newaxis]
-                    sliced_a = bias(activations[j - 1], self.bias).copy()[np.newaxis]
-                    deltas[j - 1] = deltas[j - 1] + np.dot(sliced_a.T, sliced_e)
-
+                    sliced_e = errors[j][np.newaxis]
+                    sliced_a = bias(activations[j - 1], self.bias)[np.newaxis]
+                    deltas[j - 1] = deltas[j - 1] + sliced_a.T @ sliced_e
+        # update and return the gradients
         for l in range(len(weights)):
             gradients[l] = deltas[l].copy()
             gradients[l][:1] = deltas[l][:1] / X.shape[0]
-            gradients[l][1:] = (np.divide(deltas[l][1:]
-                                          + np.dot(self.l2, weights[l][1:]),
-                                          X.shape[0]))
+            gradients[l][1:] = deltas[l][1:] / X.shape[0] + self.l2 * weights[l][1:]
         del deltas
         del errors
         return gradients
@@ -144,8 +183,8 @@ class NNClassifier():
         X, _, _ = standardize_data(X)
         batchsize = min(self.batchsize, X.shape[0])
         for i in range(self.n_iter):
-            acc = np.round(accuracy_score(self.predict(X), y_test), 3)
             if self.verbose:
+                acc = np.round(accuracy_score(self.predict(X), y_test), 3)
                 print("\r%s/%s, [%s]   "%(i, self.n_iter, acc), end ='')
             X_sh, y_sh = shuffle(X, y)
             if (X.shape[0] % batchsize) != 0:
