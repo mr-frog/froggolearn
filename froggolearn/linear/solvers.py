@@ -16,7 +16,6 @@ def gradientdescent(cost_func, theta, args=(), delta_func = 0):
     """
     Minimizes a cost_function using an iterative gradient descent approach.
     """
-
     step = 1
     old_cost = 0
     while True:
@@ -36,7 +35,6 @@ def normalequation(X_values, y_values, l_val = 0):
     """
     Solves a linear regression problem for theta using the normal equations approach.
     """
-
     l_matrix = np.eye(N = X_values.shape[1])
     l_matrix[0][0] = 0
     l_matrix = l_matrix * l_val

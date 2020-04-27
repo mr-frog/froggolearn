@@ -1,22 +1,31 @@
 import numpy as np
 from .activations import activation, derivative, cost
 from ..utils.utils import shuffle, bias, check_input_type, standardize_data
-
-def make_topology(X, y, layers, neurons):
+from ..metrics import accuracy_score
+def make_topology(X, y, layers, neurons, type, random_state):
     """
     Creates a list of weight-matrices corresponding to the given NN-Topology.
+    Uses the initialization method recommended by Glorot et al.
     """
+    if isinstance(random_state, int):
+        np.random.seed(int(random_state))
+    factor = 6.
+    if type == "log":
+        factor = 2.
     weights = []
     for layer in range(len(neurons)):
         if layer == 0:
             layer_shape = (X.shape[1] + 1, neurons[layer])
-            weights.append(2 * np.random.random(layer_shape) - 1)
+            bounds = np.sqrt(factor / (layer_shape[0] + layer_shape[1]))
+            weights.append(np.random.uniform(-bounds, bounds, layer_shape))
         if layer == max(range(len(neurons))):
             layer_shape = (neurons[layer] + 1, y.shape[1])
-            weights.append(2 * np.random.random(layer_shape) - 1)
+            bounds = np.sqrt(factor / (layer_shape[0] + layer_shape[1]))
+            weights.append(np.random.uniform(-bounds, bounds, layer_shape))
         else:
             layer_shape = (neurons[layer] + 1, neurons[layer + 1])
-            weights.append(2 * np.random.random(layer_shape) - 1)
+            bounds = np.sqrt(factor / (layer_shape[0] + layer_shape[1]))
+            weights.append(np.random.uniform(-bounds, bounds, layer_shape))
     return weights
 
 def calc_num_gradient(X, y, weights):
@@ -36,15 +45,16 @@ def calc_num_gradient(X, y, weights):
             neg_weights[k] = neg.reshape(weights[k].shape)
             h_pos = forward_propagate(X, weights = pos_weights)[-1]
             h_neg = forward_propagate(X, weights = neg_weights)[-1]
-            j_pos = cost_func(h_pos, y, pos_weights)
-            j_neg = cost_func(h_neg, y, neg_weights)
+            j_pos = cost(h_pos, y, pos_weights)
+            j_neg = cost(h_neg, y, neg_weights)
             n_vec[element] = (j_pos - j_neg) / (2 * eps)
         numerical_gradients[k] = n_vec.reshape(weights[k].shape)
     return numerical_gradients
 
 class NNClassifier():
-    def __init__(self, n_neurons, n_iter = 100, type = "log", solver = "sgd",
-                 batchsize = 200, rate = 0.5, l2 = 0.0001, verbose = False):
+    def __init__(self, n_neurons=(100,), n_iter=100, type="relu", solver="sgd",
+                 batchsize=200, rate=0.01, l2=0.0001, verbose=False, bias=1,
+                 random_state = False):
         self.neurons = n_neurons
         self.layers = len(self.neurons) + 2
         self.n_iter = n_iter
@@ -54,6 +64,8 @@ class NNClassifier():
         self.rate = rate
         self.l2 = l2
         self.verbose = verbose
+        self.bias = bias
+        self.random_state = random_state
 
     def forward_propagate(self, X, weights):
         activations = []
@@ -62,7 +74,7 @@ class NNClassifier():
                 act = X
                 activations.append(act)
             else:
-                act = activation(np.dot(bias(activations[layer - 1]),
+                act = activation(np.dot(bias(activations[layer - 1], self.bias),
                                         weights[layer - 1]), self.type)
                 activations.append(act)
         return activations
@@ -99,19 +111,21 @@ class NNClassifier():
                 if j == max(range(len(activations))):
                     errors[j] = activations[j] - y[i]
                     sliced_e = errors[j].copy()[np.newaxis]
-                    sliced_a = bias(activations[j - 1]).copy()[np.newaxis]
+                    sliced_a = bias(activations[j - 1], self.bias).copy()[np.newaxis]
                     deltas[j - 1] = deltas[j - 1] + np.dot(sliced_a.T, sliced_e)
                 elif j != 0:
                     errors[j] = (np.dot(errors[j + 1], weights[j].T[:, 1:])
-                                 * derivative(activations[j], "log"))
+                                 * derivative(activations[j], self.type))
                     sliced_e = errors[j].copy()[np.newaxis]
-                    sliced_a = bias(activations[j - 1]).copy()[np.newaxis]
+                    sliced_a = bias(activations[j - 1], self.bias).copy()[np.newaxis]
                     deltas[j - 1] = deltas[j - 1] + np.dot(sliced_a.T, sliced_e)
+
         for l in range(len(weights)):
             gradients[l] = deltas[l].copy()
             gradients[l][:1] = deltas[l][:1] / X.shape[0]
-            gradients[l][1:] = (np.divide(deltas[l][1:], X.shape[0])
-                                + np.dot(self.l2, weights[l][1:]))
+            gradients[l][1:] = (np.divide(deltas[l][1:]
+                                          + np.dot(self.l2, weights[l][1:]),
+                                          X.shape[0]))
         del deltas
         del errors
         return gradients
@@ -125,29 +139,31 @@ class NNClassifier():
         for iter in range(len(self.classes)):
             y_multi[:, iter] = (y == self.classes[iter]).ravel()
         y = y_multi
-        weights = make_topology(X, y, self.layers, self.neurons)
+        self.weights = make_topology(X, y, self.layers, self.neurons, self.type,
+                                     self.random_state)
         X, _, _ = standardize_data(X)
         batchsize = min(self.batchsize, X.shape[0])
         for i in range(self.n_iter):
-
+            acc = np.round(accuracy_score(self.predict(X), y_test), 3)
+            if self.verbose:
+                print("\r%s/%s, [%s]   "%(i, self.n_iter, acc), end ='')
             X_sh, y_sh = shuffle(X, y)
             if (X.shape[0] % batchsize) != 0:
                 n_batches = range(int(np.floor(X.shape[0] / batchsize) + 1))
             else:
                 n_batches = range(int(np.floor(X.shape[0] / batchsize)))
             for n in n_batches:
-                if self.verbose:
-                    print("\r%s/%s, (%s/%s)   "%(i, self.n_iter, n, max(n_batches)), end ='')
+
                 batchstart = n * batchsize
                 batchend = min((n + 1) * batchsize, X.shape[0])
                 batch = slice(batchstart, batchend)
                 gradients = self.backward_propagate(X_sh[batch], y_sh[batch],
-                                                    weights)
-                for l in range(len(weights)):
-                    weights[l] = weights[l] - self.rate * gradients[l]
+                                                    self.weights)
+                for l in range(len(self.weights)):
+                    self.weights[l] = self.weights[l] - self.rate * gradients[l]
         if self.verbose:
-            print("\n\n")
-        self.weights = weights
+            print("\n")
+
     def predict(self, X_val):
         weights = self.weights
         X = X_val.copy()

@@ -6,9 +6,34 @@ from ..utils.utils import *
 __all__ = ["LinearRegression", "LogisticRegression"]
 
 class LinearRegression:
-    """Fit Regression-Problem using a Linear Regression approach."""
+    """
+    Least Squares Linear Regression.
 
-    def __init__(self, penalty='l2', l_val=1.0, fit_intercept=True,
+    Parameters:
+    ---
+    penalty : str, default 'l2'
+
+    l_val : float, default 0.1
+
+    fit_intercept : bool, default True
+
+    solver : str, default 'lbfgsb'
+
+    standardize : bool, default True
+
+    Public Methods:
+    ---
+    fit(X, y)
+        Fit the Regressor to a certain training set (X, y)
+
+    predict(X)
+        Predict labels based on a test set (X)
+
+    unscale_coef()
+        Unscales the coefficents e.g. to compare them with other models
+    """
+
+    def __init__(self, penalty='l2', l_val=0.1, fit_intercept=True,
                  solver='lbfgsb', standardize=True):
         if penalty not in ['l2', None]:
             raise ValueError("Only 'l2' or None penalty is supported as of now."
@@ -26,7 +51,7 @@ class LinearRegression:
         self.isfit = False
         self.is_standardized = False
 
-    def cost_func(self, t, X_v, y_v, penalty, l_val):
+    def _cost_func(self, t, X_v, y_v, penalty, l_val):
         e = len(y_v)
         h = (t @ X_v.T)
         if penalty == 'l2':
@@ -35,7 +60,7 @@ class LinearRegression:
         elif penalty == None:
             return (1/(2*e) * np.power((h - y_v), 2).sum())
 
-    def delta_func(self, t, X_v, y_v, penalty, l_val):
+    def _delta_func(self, t, X_v, y_v, penalty, l_val):
         e = len(y_v)
         h = (t @ X_v.T)
         if penalty == 'l2':
@@ -81,10 +106,10 @@ class LinearRegression:
         if self.solver == "ne":
             theta = normalequation(X_values, y_values, self.l_val)
         if self.solver == 'gd':
-            theta = gradientdescent(self.cost_func, theta, (X_values, y_values,
+            theta = gradientdescent(self._cost_func, theta, (X_values, y_values,
                                     self.penalty, self.l_val), self.delta_func)
         elif self.solver == 'lbfgsb':
-            theta = lbfgsb(self.cost_func, theta, (X_values, y_values,
+            theta = lbfgsb(self._cost_func, theta, (X_values, y_values,
                            self.penalty, self.l_val), self.delta_func)
 
         if self.fit_intercept:
@@ -177,7 +202,7 @@ class LogisticRegression:
         self.sx, self.mx = 1, 0
         self.isfit = False
 
-    def cost_func(self, t, X_v, y_v, penalty, l_val):
+    def _cost_func(self, t, X_v, y_v, penalty, l_val):
         e = len(y_v)
         h = sigmoid(t@X_v.T)
         if penalty == 'l2':
@@ -238,11 +263,11 @@ class LogisticRegression:
                 y_multi[~mask] = 0
                 y_multi = y_multi.astype('float64')
                 if self.solver == 'gd':
-                    theta = gradientdescent(self.cost_func, theta, (X_values,
+                    theta = gradientdescent(self._cost_func, theta, (X_values,
                                             y_multi, self.penalty, self.l_val),
                                             self.delta_func)
                 elif self.solver == 'lbfgsb':
-                    theta = lbfgsb(self.cost_func, theta, (X_values, y_multi,
+                    theta = lbfgsb(self._cost_func, theta, (X_values, y_multi,
                                    self.penalty, self.l_val), self.delta_func)
                 else:
                     raise ValueError("Solver not supported. "

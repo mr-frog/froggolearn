@@ -66,7 +66,7 @@ def check_input_type(*inps):
         inp_values_list.append(inp_values)
     return inp_values_list
 
-def bias(X, bias=1, axis=1):
+def bias(X, bias=0.1, axis=1):
     """
     Adds bias unit to input vector/matrix
     """

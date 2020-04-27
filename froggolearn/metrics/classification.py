@@ -37,16 +37,28 @@ def score_matrix(y_true, y_predict, beta = 1):
         correct_predict = (np.count_nonzero(
                             np.logical_and(y_predict_values == label,
                                            y_predict_values == y_true_values)))
-        if total_predict != 0:
-            precision = correct_predict / total_predict
+        if total_predict == 0:
+            precision = 0
         else:
-            precision = np.finfo(float).eps
-        recall = correct_predict / actual
-        f1 = (1+beta**2) * (precision * recall)/(beta**2 * precision + recall)
+            precision = correct_predict / total_predict
+        if correct_predict == 0:
+            recall = 0
+        else:
+            recall = correct_predict / actual
+        if precision == 0 or recall == 0:
+            f1 = 0
+        else:
+            f1 = (1+beta**2) * (precision * recall)/(beta**2 * precision + recall)
 
         row = pd.DataFrame([[label, precision, recall, f1]], columns = names)
         sco_ma = sco_ma.append(row, ignore_index=True)
-
+    min = pd.DataFrame([sco_ma.min()],
+                        columns = names)
+    min['Label'] = 'min'
+    sco_ma = sco_ma.append(min, ignore_index=True)
+    avg = pd.DataFrame([sco_ma.mean()], columns = names)
+    avg['Label'] = 'avg'
+    sco_ma = sco_ma.append(avg, ignore_index=True)
     return sco_ma
 
 def confusion_matrix(y_true, y_predict):

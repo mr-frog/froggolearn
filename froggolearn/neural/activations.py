@@ -3,7 +3,7 @@ from froggolearn.utils import sigmoid
 from scipy.special import xlogy
 
 def check_type(type):
-    types = ["log"]
+    types = ["log", "relu"]
     if not type in types:
         raise ValueError("Activation Type not recognized")
 
@@ -12,17 +12,18 @@ def activation(X, type):
     if type == "log":
         return sigmoid(X)
     if type == "relu":
-        return np.clip(X, 0, np.inf)
+        return np.clip(X, 0, np.finfo(X.dtype).max)
 
 def derivative(X, type):
     check_type(type)
     if type == "log":
         return X * (1 - X)
     if type == "relu":
-        return np.greater(X, 0).astype(int)
+        return np.heaviside(X, 0)
 
 def cost(h, y, weights, type, l2 = 1):
-    check_type(type)
+    if type not in ["log"]:
+        raise ValueError("Loss Type not recognized")
     if type == "log":
         reg_sum = 0
         for weight in weights:
