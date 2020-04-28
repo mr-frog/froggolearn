@@ -46,34 +46,56 @@ def make_topology(X, y, layers, neurons, type, random_state):
             weights.append(np.random.uniform(-bounds, bounds, layer_shape))
     return weights
 
-def calc_num_gradient(X, y, weights):
-    eps = 1e-4
-    numerical_gradients = weights.copy()
-    for k in range(len(weights)):
-        pos_weights = weights.copy()
-        neg_weights = weights.copy()
-        w_vec = weights[k].copy().ravel()
-        n_vec = np.zeros_like(w_vec)
-        for element in range(len(w_vec)):
-            pos = w_vec.copy()
-            neg = w_vec.copy()
-            pos[element] = float(pos[element]) + eps
-            neg[element] = float(neg[element]) - eps
-            pos_weights[k] = pos.reshape(weights[k].shape)
-            neg_weights[k] = neg.reshape(weights[k].shape)
-            h_pos = forward_propagate(X, weights = pos_weights)[-1]
-            h_neg = forward_propagate(X, weights = neg_weights)[-1]
-            j_pos = cost(h_pos, y, pos_weights)
-            j_neg = cost(h_neg, y, neg_weights)
-            n_vec[element] = (j_pos - j_neg) / (2 * eps)
-        numerical_gradients[k] = n_vec.reshape(weights[k].shape)
-    return numerical_gradients
+class NNClassifier:
+    """
+    A Multilayer Perceptron-Type Neural Network NNClassifier
 
-class NNClassifier():
-    def __init__(self, n_neurons=(100,), n_iter=100, type="relu", solver="sgd",
-                 batchsize=200, rate=0.01, l2=0.0001, verbose=False, bias=1,
-                 random_state = False):
-        self.neurons = n_neurons
+    Parameters
+    ---
+    neurons : tuple (default = (100,))
+        The amount of neurons in the hidden layers,
+        each entry describes one layer.
+
+    n_iter : int (default = 100)
+        The amount of iterations the network should train for.
+
+    type : str (default = "elu")
+        The activation type that is used for the network.
+
+    solver : str (default = "sgd")
+        The solver that is used to minimize the gradients.
+
+    batchsize : int (default = 200)
+        The size of the minibatches used in stochastic gradient descent.
+
+    rate : float (default = 0.1)
+        The learning rate.
+
+    l2 : float (default = 0.0001)
+        The strength of the l2 penalization.
+
+    bias : float (default = 1.0)
+        The Value of the bias node in each layer.
+
+    verbose : bool (default = False)
+        Whether or not the network should output some debugging information
+        during training.
+
+    random_state : int or None (default = None)
+        Can be used to initialize the same weights for comparisons.
+
+    Public Methods:
+    ---
+    fit(X, y)
+        Fit the Neural Network to a certain training set (X, y)
+
+    predict(X)
+        Predict labels based on a test set (X)
+    """
+    def __init__(self, neurons=(100,), n_iter=100, type="elu", solver="sgd",
+                 batchsize=200, rate=0.1, l2=0.0001, bias=1.0, verbose=False,
+                 random_state = None):
+        self.neurons = neurons
         self.layers = len(self.neurons) + 2
         self.n_iter = n_iter
         self.type = type
@@ -85,7 +107,7 @@ class NNClassifier():
         self.bias = bias
         self.random_state = random_state
 
-    def forward_propagate(self, X, weights):
+    def _forward_propagate(self, X, weights):
         """
         Forward propagate over given batch of samples.
 
@@ -106,17 +128,27 @@ class NNClassifier():
             i-th layer of the network.
         """
         activations = []
-        for layer in range(len(weights) + 1):
+        layer_range = range(len(weights) + 1)
+        for layer in layer_range:
             if layer == 0:
-                act = X
-                activations.append(act)
+                # the first activation is just the input values
+                a = X
+                activations.append(a)
+            elif layer != max(layer_range):
+                # the hidden layers use whichever activation function was
+                # given by the user when initializing the network
+                z = bias(activations[layer - 1], self.bias) @ weights[layer - 1]
+                a = activation(z, self.type)
+                activations.append(a)
             else:
-                act = activation((bias(activations[layer - 1], self.bias) @
-                                        weights[layer - 1]), self.type)
-                activations.append(act)
+                # The output layer always uses the softmax function for
+                # probabilistic results
+                z = bias(activations[layer - 1], self.bias) @ weights[layer - 1]
+                a = activation(z, "softmax")
+                activations.append(a)
         return activations
 
-    def backward_propagate(self, X, y, weights):
+    def _backward_propagate(self, X, y, weights):
         """
         Backward propagate over given batch of samples.
 
@@ -146,7 +178,7 @@ class NNClassifier():
         # Iterate over all samples
         for i in range(X.shape[0]):
             # forward propagate to obtain the current hypothesis of the network
-            activations = self.forward_propagate(X[i, :], weights)
+            activations = self._forward_propagate(X[i, :], weights)
             # backward propagate iteratively over the layers
             for j in reversed(range(len(activations))):
                 if j == max(range(len(activations))):
@@ -185,7 +217,7 @@ class NNClassifier():
         for i in range(self.n_iter):
             if self.verbose:
                 acc = np.round(accuracy_score(self.predict(X), y_test), 3)
-                print("\r%s/%s, [%s]   "%(i, self.n_iter, acc), end ='')
+                print("\r%s/%s [%s]   "%(i, self.n_iter, acc), end ='')
             X_sh, y_sh = shuffle(X, y)
             if (X.shape[0] % batchsize) != 0:
                 n_batches = range(int(np.floor(X.shape[0] / batchsize) + 1))
@@ -196,7 +228,7 @@ class NNClassifier():
                 batchstart = n * batchsize
                 batchend = min((n + 1) * batchsize, X.shape[0])
                 batch = slice(batchstart, batchend)
-                gradients = self.backward_propagate(X_sh[batch], y_sh[batch],
+                gradients = self._backward_propagate(X_sh[batch], y_sh[batch],
                                                     self.weights)
                 for l in range(len(self.weights)):
                     self.weights[l] = self.weights[l] - self.rate * gradients[l]
@@ -206,5 +238,5 @@ class NNClassifier():
     def predict(self, X_val):
         weights = self.weights
         X = X_val.copy()
-        y_pred = self.forward_propagate(X, weights)
+        y_pred = self._forward_propagate(X, weights)
         return self.classes[np.argmax(y_pred[-1].T, axis = 0)]

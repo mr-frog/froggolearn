@@ -11,15 +11,15 @@ class LinearRegression:
 
     Parameters:
     ---
-    penalty : str, default 'l2'
+    penalty : str (default 'l2')
 
-    l_val : float, default 0.1
+    l_val : float (default 0.1)
 
-    fit_intercept : bool, default True
+    fit_intercept : bool (default True)
 
-    solver : str, default 'lbfgsb'
+    solver : str (default 'lbfgsb')
 
-    standardize : bool, default True
+    standardize : bool (default True)
 
     Public Methods:
     ---
@@ -27,7 +27,7 @@ class LinearRegression:
         Fit the Regressor to a certain training set (X, y)
 
     predict(X)
-        Predict labels based on a test set (X)
+        Predict values based on a test set (X)
 
     unscale_coef()
         Unscales the coefficents e.g. to compare them with other models
