@@ -7,23 +7,25 @@ def make_topology(X, y, layers, neurons, type, random_state):
     Creates a list of weight-matrices corresponding to the given NN-Topology.
     Uses the initialization method recommended by Glorot et al.
 
-    Input
     ---
-    X :
+    X : matrix (dimensions = m, n)
+        Training matrix, with dimensions m = n_samples and
+        n = n_features.
 
+    y : vector (dimensions = m, 1)
+        Target vector relative to X, with dimensions m = n_samples and 1.
 
-    y :
+    layers : int
+        Number of layers in the neural network
 
+    nerons : tuple
+        The i-th entry represents the number of neurons in the i-th hidden layer
 
-    layers :
+    type : str
+        The activation type, important for weight initialization
 
-
-    nerons :
-
-    type :
-
-
-    random_state
+    random_state : None or int
+        Can be used to recreate the same weights
     """
     if isinstance(random_state, int):
         np.random.seed(int(random_state))
