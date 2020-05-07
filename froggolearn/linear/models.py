@@ -107,10 +107,10 @@ class LinearRegression:
             theta = normalequation(X_values, y_values, self.l_val)
         if self.solver == 'gd':
             theta = gradientdescent(self._cost_func, theta, (X_values, y_values,
-                                    self.penalty, self.l_val), self.delta_func)
+                                    self.penalty, self.l_val), self._delta_func)
         elif self.solver == 'lbfgsb':
             theta = lbfgsb(self._cost_func, theta, (X_values, y_values,
-                           self.penalty, self.l_val), self.delta_func)
+                           self.penalty, self.l_val), self._delta_func)
 
         if self.fit_intercept:
             self.intercept = theta[0]
@@ -213,7 +213,7 @@ class LogisticRegression:
         elif penalty == None:
             return (((1 / e) * -y_v @ np.log(h) - (1 - y_v) @ np.log(1 - h)))
 
-    def delta_func(self, t, X_v, y_v, penalty, l_val):
+    def _delta_func(self, t, X_v, y_v, penalty, l_val):
         h = sigmoid(t@X_v.T)
         e = len(y_v)
         if penalty == 'l2':
@@ -265,10 +265,10 @@ class LogisticRegression:
                 if self.solver == 'gd':
                     theta = gradientdescent(self._cost_func, theta, (X_values,
                                             y_multi, self.penalty, self.l_val),
-                                            self.delta_func)
+                                            self._delta_func)
                 elif self.solver == 'lbfgsb':
                     theta = lbfgsb(self._cost_func, theta, (X_values, y_multi,
-                                   self.penalty, self.l_val), self.delta_func)
+                                   self.penalty, self.l_val), self._delta_func)
                 else:
                     raise ValueError("Solver not supported. "
                                      "Got %s, must be 'gd' or 'lbfgsb'"

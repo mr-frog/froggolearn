@@ -7,7 +7,8 @@ setup(name='froggolearn',
       install_requires=[
         'pandas>=1.0.3',
         'numpy>=1.18.2',
-        'libsvm>=3.23.0.4'
+        'libsvm>=3.23.0.4',
+        'scipy>=1.4.1'
         ],
       url='',
       author='Mr Frog',

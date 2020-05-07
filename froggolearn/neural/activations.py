@@ -10,20 +10,20 @@ def activation(X, type):
     check_type(type)
     if type == "logistic":
         return sigmoid(X)
-    if type == "relu":
+    elif type == "relu":
         ax = np.clip(X, 0, np.inf)
         return ax
-    if type == "leaky":
+    elif type == "leaky":
         a = 0.01
         ax = np.clip(X, 0, np.finfo(X.dtype).max)
         ax[X < 0] = X[X < 0] * a
         return ax
-    if type == "elu":
+    elif type == "elu":
         a = 0.01
         ax = np.clip(X, 0, np.finfo(X.dtype).max)
         ax[X < 0] = (np.exp(X[X < 0]) - 1) * a
         return ax
-    if type == "softmax":
+    elif type == "softmax":
         if len(X.shape) != 1:
             ax = X - X.max(axis=1)[:, np.newaxis]
             ax = np.exp(ax)
@@ -33,24 +33,28 @@ def activation(X, type):
             ax = np.exp(ax)
             ax = ax / ax.sum()
         return ax
+    else:
+        return X
 
 def derivative(X, type):
     check_type(type)
     if type == "log":
         return X * (1 - X)
-    if type == "relu":
+    elif type == "relu":
         dx = 1 * (X > 0)
         return dx
-    if type == "leaky":
+    elif type == "leaky":
         a = 0.01
         dx = np.ones_like(X)
         dx[X < 0] = a
         return dx
-    if type == "elu":
+    elif type == "elu":
         a = 0.01
         dx = np.ones_like(X)
         dx[X < 0] = X[X < 0] + a
         return dx
+    else:
+        return 1
 
 def cost(h, y, weights, type, l2 = 1):
     if type not in ["log"]:

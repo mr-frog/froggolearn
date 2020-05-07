@@ -74,6 +74,9 @@ def bias(X, bias=0.1, axis=1):
         axis = 0
     return np.insert(X, 0, 1, axis = axis)
 
+def cast_to_3d(X, n):
+        return np.reshape(np.repeat(X, n), (*X.shape, n))
+
 class LabelEncoder:
 
     def __init__(self):
