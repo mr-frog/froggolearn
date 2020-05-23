@@ -15,12 +15,12 @@ def activation(X, type):
         return ax
     elif type == "leaky":
         a = 0.01
-        ax = np.clip(X, 0, np.finfo(X.dtype).max)
+        ax = X
         ax[X < 0] = X[X < 0] * a
         return ax
     elif type == "elu":
         a = 0.01
-        ax = np.clip(X, 0, np.finfo(X.dtype).max)
+        ax = X
         ax[X < 0] = (np.exp(X[X < 0]) - 1) * a
         return ax
     elif type == "softmax":
