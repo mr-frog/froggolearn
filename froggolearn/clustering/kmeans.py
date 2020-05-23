@@ -34,6 +34,7 @@ class KMeansClustering:
         return centroids
 
     def fit(self, X):
+        X = X.copy()
         distortions = np.ones(shape=(self.n_inits))*np.inf
         labels = np.random.randint(0, self.n_centroids, X.shape[0])
         X, _, _ = standardize_data(X)
@@ -50,6 +51,7 @@ class KMeansClustering:
             distortions[n] = d
             if distortions[n] == min(distortions):
                 self.centroids = centroids
+                self.distortion = distortions[n]
         self.isfit = True
 
     def predict(self, X):

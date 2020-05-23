@@ -1,3 +1,3 @@
-from .models import KMeansClustering
+from .kmeans import KMeansClustering
 
 __all__ = ["KMeansClustering"]
